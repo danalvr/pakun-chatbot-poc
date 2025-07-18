@@ -1,15 +1,19 @@
 {
   "name": "pakun-chatbot-poc",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/server/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@adiwajshing/baileys": "^3.5.0",
+    "@peculiar/webcrypto": "^1.5.0",
+    "@whiskeysockets/baileys": "^6.17.16",
     "baileys": "^6.7.16",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
