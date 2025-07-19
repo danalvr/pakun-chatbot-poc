@@ -13,6 +13,9 @@ dist-ssr
 *.local
 .env
 
+# auth session
+auth_info_baileys
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
