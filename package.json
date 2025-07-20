@@ -8,17 +8,20 @@
   },
   "keywords": [],
   "author": "",
+  "type": "module",
   "license": "ISC",
   "description": "",
   "dependencies": {
     "@adiwajshing/baileys": "^3.5.0",
+    "@google/genai": "^1.0.0",
     "@peculiar/webcrypto": "^1.5.0",
     "@whiskeysockets/baileys": "^6.17.16",
     "baileys": "^6.7.16",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
     "firebase-admin": "^13.4.0",
-    "openai": "^5.10.1"
+    "openai": "^5.10.1",
+    "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
