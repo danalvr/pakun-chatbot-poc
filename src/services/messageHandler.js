@@ -140,7 +140,7 @@ export default async function handleIncomingMessage(sock, msg) {
 
     case "financial_tips":
       response = await askGemini(
-        `Berikan tips singkat hari ini untuk meningkatkan literasi keuangan.`
+        `Berikan tips random singkat hari ini untuk meningkatkan literasi keuangan.`
       );
       break;
 
