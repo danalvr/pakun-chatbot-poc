@@ -1,6 +1,7 @@
-const express = require("express");
-const dotenv = require("dotenv");
-const startBot = require("../bot/whatsapp");
+// server.js
+import express from "express";
+import dotenv from "dotenv";
+import startBot from "../bot/whatsapp.js"; // pastikan file ini juga pakai export default
 
 dotenv.config();
 const app = express();
@@ -15,4 +16,4 @@ app.listen(PORT, async () => {
   await startBot();
 });
 
-module.exports = app;
+export default app;
