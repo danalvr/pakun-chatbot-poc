@@ -1,39 +1,51 @@
-const {
-  default: makeWASocket,
+import {
+  makeWASocket,
+  DisconnectReason,
   useMultiFileAuthState,
-} = require("@whiskeysockets/baileys");
+} from "@whiskeysockets/baileys";
+import { Boom } from "@hapi/boom";
+import crypto from "node:crypto";
+globalThis.crypto = crypto;
 
-const { Crypto } = require("@peculiar/webcrypto");
-global.crypto = new Crypto();
+import handleIncomingMessage from "../services/messageHandler.js";
 
 async function connectToWhatsApp() {
-  const { state, saveCreds } = await useMultiFileAuthState("auth"); // 'auth' is the folder to save credentials
+  const { state, saveCreds } = await useMultiFileAuthState("auth_info_baileys");
+
   const sock = makeWASocket({
     auth: state,
-    printQRInTerminal: true, // Display QR code in the terminal
+    printQRInTerminal: true,
   });
 
-  sock.ev.on("creds.update", saveCreds); // Save credentials on update
-
-  // Handle connection events (optional)
   sock.ev.on("connection.update", (update) => {
     const { connection, lastDisconnect } = update;
+
     if (connection === "close") {
-      // Reconnect if connection closed unexpectedly
-      // Example: if (lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut) { connectToWhatsApp(); }
+      const error = lastDisconnect?.error;
+      const shouldReconnect =
+        !(error instanceof Boom) ||
+        error.output?.statusCode !== DisconnectReason.loggedOut;
+
+      console.log("Disconnected:", error);
+      if (shouldReconnect) {
+        console.log("🔁 Attempting reconnect...");
+        connectToWhatsApp();
+      }
     } else if (connection === "open") {
       console.log("Connected to WhatsApp!");
     }
   });
 
-  // Handle incoming messages
-  sock.ev.on("messages.upsert", async (m) => {
-    console.log(JSON.stringify(m, undefined, 2));
-    // Process incoming messages here
-    // Example: if (m.messages[0].message.conversation === 'hello') {
-    //     await sock.sendMessage(m.messages[0].key.remoteJid, { text: 'world!' });
-    // }
+  sock.ev.on("creds.update", saveCreds);
+
+  sock.ev.on("messages.upsert", async ({ messages, type }) => {
+    if (type === "notify") {
+      const msg = messages[0];
+      if (!msg.key.fromMe && msg.message) {
+        await handleIncomingMessage(sock, msg);
+      }
+    }
   });
 }
 
-module.exports = connectToWhatsApp;
+connectToWhatsApp();
