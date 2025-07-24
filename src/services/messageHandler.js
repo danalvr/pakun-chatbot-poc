@@ -10,6 +10,13 @@ import { normalizeAmountString } from "../utils/index.js";
 function detectIntent(text) {
   const msg = text.toLowerCase();
 
+  if (/total.*pengeluaran|pengeluaran.*total/i.test(msg))
+    return "total_expense";
+
+  if (/total.*pemasukan|pemasukan.*total/i.test(msg)) return "total_income";
+
+  if (/rekap.*transaksi|total.*transaksi/i.test(msg)) return "total_summary";
+
   if (
     /(catat|habis|keluar|pengeluaran|beli|bayar).*(\d+)/.test(msg) ||
     /(spend|pengeluaran|habis uang)/.test(msg)
@@ -22,12 +29,12 @@ function detectIntent(text) {
   )
     return "record_transaction";
 
-  if (msg.includes("boros") || msg.includes("berlebihan"))
+  if (msg.includes("analisa") || msg.includes("analisis"))
     return "check_spending";
 
   if (msg.includes("tips") || msg.includes("hemat")) return "financial_tips";
 
-  if (msg.includes("pakun")) return "ai_general";
+  if (msg.includes("pakun") || msg.includes("daniel")) return "ai_general";
 
   return "unknown";
 }
@@ -133,8 +140,22 @@ export default async function handleIncomingMessage(sock, msg) {
       break;
 
     case "check_spending":
+      const snapshot = await db
+        .collection("transactions")
+        .where("sender", "==", sender)
+        .get();
+
+      let totalIncome = 0;
+      let totalExpense = 0;
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        if (data.type === "income") totalIncome += data.amount || 0;
+        if (data.type === "expense") totalExpense += data.amount || 0;
+      });
+
       response = await askGemini(
-        `Apakah pengeluaran saya minggu ini berlebihan?`
+        `Coba analisis keuangan saya, kamu memiliki total pengeluaran sebesar Rp${totalExpense.toLocaleString()}, dan total pemasukan sebesar Rp${totalIncome.toLocaleString()}.`
       );
       break;
 
@@ -147,6 +168,59 @@ export default async function handleIncomingMessage(sock, msg) {
     case "ai_general":
       response = await askGemini(text);
       break;
+
+    case "total_expense": {
+      const snapshot = await db
+        .collection("transactions")
+        .where("sender", "==", sender)
+        .where("type", "==", "expense")
+        .get();
+
+      const total = snapshot.docs.reduce(
+        (sum, doc) => sum + (doc.data().amount || 0),
+        0
+      );
+
+      response = `💸 Total pengeluaran kamu saat ini adalah Rp${total.toLocaleString()}`;
+      break;
+    }
+
+    case "total_income": {
+      const snapshot = await db
+        .collection("transactions")
+        .where("sender", "==", sender)
+        .where("type", "==", "income")
+        .get();
+
+      const total = snapshot.docs.reduce(
+        (sum, doc) => sum + (doc.data().amount || 0),
+        0
+      );
+
+      response = `💰 Total pemasukan kamu saat ini adalah Rp${total.toLocaleString()}`;
+      break;
+    }
+
+    case "total_summary": {
+      const snapshot = await db
+        .collection("transactions")
+        .where("sender", "==", sender)
+        .get();
+
+      let totalIncome = 0;
+      let totalExpense = 0;
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        if (data.type === "income") totalIncome += data.amount || 0;
+        if (data.type === "expense") totalExpense += data.amount || 0;
+      });
+
+      const saldo = totalIncome - totalExpense;
+
+      response = `📊 Rekap Transaksi:\n💰 Pemasukan: Rp${totalIncome.toLocaleString()}\n💸 Pengeluaran: Rp${totalExpense.toLocaleString()}\n🧮 Saldo: Rp${saldo.toLocaleString()}`;
+      break;
+    }
 
     default:
       response = `Halo! Saya Pakun, asisten keuanganmu. Kamu bisa ketik:\n- "Catat pengeluaran 20 ribu untuk makan"\n- Kirim gambar struk belanja\n- "Pakun, apakah aku boros minggu ini?"\n- "Pakun, berikan tips hemat!"`;
