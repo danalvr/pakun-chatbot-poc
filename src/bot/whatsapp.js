@@ -3,9 +3,9 @@ import {
   DisconnectReason,
   useMultiFileAuthState,
 } from "@whiskeysockets/baileys";
+
 import { Boom } from "@hapi/boom";
-import crypto from "node:crypto";
-globalThis.crypto = crypto;
+import qrcode from "qrcode-terminal";
 
 import handleIncomingMessage from "../services/messageHandler.js";
 
@@ -18,7 +18,7 @@ async function connectToWhatsApp() {
   });
 
   sock.ev.on("connection.update", (update) => {
-    const { connection, lastDisconnect } = update;
+    const { connection, lastDisconnect, qr } = update;
 
     if (connection === "close") {
       const error = lastDisconnect?.error;
@@ -33,6 +33,11 @@ async function connectToWhatsApp() {
       }
     } else if (connection === "open") {
       console.log("Connected to WhatsApp!");
+    }
+
+    if (qr) {
+      console.log("QR Code received, scanning...");
+      qrcode.generate(qr, { small: true });
     }
   });
 
